@@ -1,0 +1,314 @@
+Account_Application_Event:
+
+Account.cs:
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Account_Application_Event
+{
+    public delegate void wd(double Balance, double amt, string Name);
+    abstract class Account
+    {
+        public event wd wdevent;
+        readonly int count_id;
+        int Id;
+        string Name;
+        double Balance;
+        static int count_obj;
+
+        public Account(string Name, double Balance) 
+        {
+            count_obj++;
+            
+            try
+            {
+                if (count_obj > 5)
+                    throw new MyException("More than 5 objects not allowed");
+
+                else
+                    Console.WriteLine("{0} object created", count_obj);
+
+                if (Name.Length < 2 && Name.Length > 15)
+                {
+                    throw new MyException("Name Length is Invalid");
+                }
+            }
+
+            catch (MyException e )
+            {
+                Console.WriteLine(e.Message);
+            }
+            
+
+            Id = ++count_id;
+            this.NAME = Name;
+            this.BALANCE = Balance;
+
+            
+
+        }
+
+        static Account()
+        {
+            Console.WriteLine("Bank of Baroda");
+        }
+
+        public int ID
+        {
+            get { return Id; }
+        }
+
+        public string NAME
+        {
+            get
+            {
+                return Name;
+            }
+
+            set
+            {
+                Name = value;
+            }
+        }
+
+        public double BALANCE
+        {
+            get { return Balance; }
+
+             set
+            {
+                Balance = value;
+            }
+        }
+
+
+        public void Deposit(double amt)
+        {
+            Console.WriteLine("in Deposit");
+            BALANCE = BALANCE + amt;
+        }
+
+        public abstract void withdraw(double amt);
+
+        public void OnWithDraw(double Balance, double amt, string Name)
+        {
+            if(wdevent != null) 
+            {
+                wdevent(Balance,amt,Name);
+            }
+        }
+
+    }
+}
+----------------------------------
+Current.cs:
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Account_Application_Event
+{
+    internal class Current:Account
+    {
+        
+
+        public Current(string Name, double Balance) : base(Name, Balance)
+        {
+
+        }
+
+        public override void withdraw(double amt)
+        {
+            Console.WriteLine("in withdraw");
+
+            try
+            {
+                if (BALANCE - amt < 0)
+                {
+                    throw new Exception("Account me jitne paise hai usse jyada kaise nikal sakta hai");
+                }
+                else
+                {
+                    BALANCE = BALANCE - amt;
+
+                    OnWithDraw(BALANCE, amt, NAME);
+                }
+            }
+
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+            }
+            
+
+        }
+    }
+}
+-------------------------------------
+
+Saving.cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Account_Application_Event
+{
+    internal class Saving:Account
+    {
+        const double minbal = 1000;
+        static double roi= 0.05;
+
+        static Saving()
+        {
+            Console.WriteLine("in Saving - Bank of Baroda");
+        }
+        public Saving(string Name, double Balance):base(Name, Balance)
+        {
+
+        }
+
+        public override void withdraw(double amt)
+        {
+            Console.WriteLine("in withdraw");
+
+            try
+            {
+                if (BALANCE - amt < minbal)
+                {
+                    throw new Exception("Kuch toh chod de Minimum Balance");
+                }
+                else
+                {
+                    BALANCE = BALANCE - amt;
+                    OnWithDraw(BALANCE, amt, NAME);
+                }
+
+            }
+            
+
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+            }
+
+            
+            
+        }
+
+       /*
+        public static double Payinterest(Account a)
+        {
+            double interest =  a.BALANCE*roi;
+             a.BALANCE = a.BALANCE + interest;
+            return interest;
+
+        }
+        
+        */
+    }
+}
+-------------------------------------
+Message.cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Account_Application_Event
+{
+    internal class Message
+    {
+        public void email(double Balance, double amt, string Name)
+        {
+            Console.WriteLine("Email - Account Type : {0} Withdrawn Amount : {1} Current Balance : {2}",Name,amt,Balance);
+        }
+
+        public void sms(double Balance, double amt, string Name)
+        {
+            Console.WriteLine("SMS - Account Type : {0} Withdrawn Amount : {1} Current Balance : {2}", Name, amt, Balance);
+        }
+    }
+}
+------------------------------------
+MyException.cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Account_Application_Event
+{
+    internal class MyException : SystemException
+    {
+        public MyException(string mess)
+        {
+            Message = mess;
+        }
+        public string Message { get; set; }
+    }
+}
+-------------------------------------
+Program.cs
+namespace Account_Application_Event
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            Account[] arr = new Account[6];
+
+            Message m = new Message();
+
+            arr[0] = new Saving("vaibhav", 10000);
+            arr[1] = new Current("pri", 5000);
+            arr[2] = new Saving("San", 20000);
+            arr[3] = new Current("Current", 2000);
+            arr[4] = new Saving("Saving", 30000);
+            arr[5] = new Current("Current", 4000);
+
+            for (int i = 0; i < arr.Length; i++)
+            {
+                arr[i].wdevent += m.sms;
+                arr[i].wdevent += m.email;
+            }
+
+            try
+            {
+                arr[0].Deposit(1000);
+                arr[0].withdraw(9000);
+
+                arr[1].withdraw(10000);
+
+                arr[2].withdraw(19500);
+
+                arr[3].withdraw(10000);
+
+                Saving s = arr[0] as Saving;
+                //double d = s.Payinterest(arr[0]);
+               // Console.WriteLine("Interst is : " + d);
+
+               // Console.WriteLine("New balance is : " + arr[0].BALANCE);
+
+                //  arr[].withdraw(9000);
+            }
+
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
+
+            Console.ReadLine();
+
+        }
+    }
+}
